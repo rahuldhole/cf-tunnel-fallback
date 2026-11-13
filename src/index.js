@@ -80,6 +80,7 @@ export default {
         headers: {
           'Content-Type': 'text/html;charset=UTF-8',
           'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'X-Robots-Tag': 'noindex, nofollow, noarchive',
           'X-Tunnel-Fallback': 'preview'
         }
       });
@@ -140,6 +141,7 @@ export default {
       'Status': '503',
       'Retry-After': retryAfter,
       'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'X-Robots-Tag': 'noindex, nofollow, noarchive',
       'X-Tunnel-Fallback': 'active'
     };
 

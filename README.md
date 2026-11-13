@@ -134,6 +134,9 @@ You can preview the fallback screen at any time on your live domain or `.workers
 
 *(In preview mode, client-side auto-reload is paused and returns HTTP 200 with `X-Tunnel-Fallback: preview`).*
 
+> [!NOTE]
+> **SEO & Crawler Safety**: All preview and fallback responses automatically include `X-Robots-Tag: noindex, nofollow, noarchive` and `Cache-Control: no-store`. Search engine crawlers (Googlebot, Bingbot) will never index, crawl, or cache your fallback or preview screens over your real application.
+
 ---
 
 ## Quota Optimization Tip
