@@ -235,9 +235,55 @@
       flex: 1;
       width: 100%;
       height: 100%;
+      min-height: 400px;
       border: none;
       background: #000;
     }
+    .json-section {
+      border-top: 1px solid var(--border);
+      background: #09090b;
+      display: flex;
+      flex-direction: column;
+    }
+    .json-header {
+      padding: 0.5rem 1rem;
+      background: #121215;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    .json-header .title {
+      font-weight: 600;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .json-header .badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+      font-family: monospace;
+    }
+    .json-body {
+      padding: 1rem;
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: #38bdf8;
+      background: #0a0a0c;
+      overflow-x: auto;
+      max-height: 200px;
+    }
+    .json-body .key { color: #f43f5e; }
+    .json-body .string { color: #34d399; }
+    .json-body .number { color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -313,6 +359,16 @@
       <span style="font-size:0.7rem; color:#22c55e;">● 503 Fallback Active</span>
     </div>
     <iframe id="previewFrame"></iframe>
+    <div class="json-section">
+      <div class="json-header">
+        <div class="title">
+          <span>⚡ API / JSON Response</span>
+          <span class="badge">Accept: application/json</span>
+        </div>
+        <span>HTTP 503 Service Unavailable</span>
+      </div>
+      <pre class="json-body" id="jsonPreview"></pre>
+    </div>
   </main>
 
   <script>
@@ -351,6 +407,21 @@
         .replace(/'/g, '&#039;');
     }
 
+    function syntaxHighlightJson(jsonObj) {
+      const str = JSON.stringify(jsonObj, null, 2);
+      return str.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+        let cls = 'number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+          } else {
+            cls = 'string';
+          }
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
     function render() {
       const raw = templates[currentTheme];
       if (!raw) return;
@@ -376,6 +447,18 @@
       doc.open();
       doc.write(html);
       doc.close();
+
+      // Render JSON preview
+      const jsonObj = {
+        error: "Service Unavailable",
+        message: message || "Our origin server is currently unreachable or undergoing scheduled maintenance.",
+        upstream_status: parseInt(code, 10) || 530,
+        retry_after: 120
+      };
+      const jsonContainer = document.getElementById('jsonPreview');
+      if (jsonContainer) {
+        jsonContainer.innerHTML = syntaxHighlightJson(jsonObj);
+      }
     }
 
     render();
