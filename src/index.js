@@ -21,9 +21,9 @@ function escapeHtml(str) {
 function sanitizeColor(color) {
   if (!color || typeof color !== 'string') return '#f59e0b';
   const trimmed = color.trim();
-  const hexRegex = /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/;
-  const rgbRegex = /^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/;
-  const hslRegex = /^hsl\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/;
+  const hexRegex = /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/;
+  const rgbRegex = /^rgba?\([\d\s.,%]+\)$/;
+  const hslRegex = /^hsla?\([\d\s.,%]+\)$/;
   if (hexRegex.test(trimmed) || rgbRegex.test(trimmed) || hslRegex.test(trimmed)) {
     return trimmed;
   }
