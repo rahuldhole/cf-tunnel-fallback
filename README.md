@@ -168,10 +168,15 @@ You can preview the fallback screen at any time on your live domain or `.workers
 
 - **Preview current active theme**:
   `https://yourdomain.com/?preview`
+- **Preview a specific simulated error code (e.g. 502, 503, 504)**:
+  `https://yourdomain.com/?preview_error=502`
+  *(Triggers your `THEME_502`, `CUSTOM_HTML_502`, or `THEME_5XX` rules with `{{STATUS_CODE}}` displayed as 502)*
 - **Preview a specific theme**:
   - `https://yourdomain.com/?preview=minimal-dark`
   - `https://yourdomain.com/?preview=terminal`
   - `https://yourdomain.com/?preview=status-diagram`
+- **Combine theme & error code**:
+  `https://yourdomain.com/?preview=terminal&preview_error=504`
 
 *(In preview mode, client-side auto-reload is paused and returns HTTP 200 with `X-Tunnel-Fallback: preview`).*
 

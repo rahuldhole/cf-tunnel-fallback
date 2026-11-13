@@ -103,12 +103,27 @@ export default {
     const url = new URL(request.url);
 
     // 0. Instant Preview Mode: Allows inspecting themes without taking down the tunnel
-    // e.g. ?preview or ?preview=terminal or ?preview=status-diagram
-    if (url.searchParams.has('preview')) {
+    // e.g. ?preview or ?preview=terminal or ?preview_error=502 or ?preview=terminal&preview_error=504
+    if (url.searchParams.has('preview') || url.searchParams.has('preview_error')) {
+      const previewErrorParam = url.searchParams.get('preview_error');
+      const simulatedStatusCode = previewErrorParam && !isNaN(parseInt(previewErrorParam, 10))
+        ? parseInt(previewErrorParam, 10)
+        : 530;
+
       const requestedTheme = url.searchParams.get('preview')?.trim().toLowerCase();
-      const customHtmlOverride = env.CUSTOM_HTML || env[`CUSTOM_HTML_${requestedTheme}`];
-      const previewThemeName = requestedTheme && THEMES[requestedTheme] ? requestedTheme : (env.THEME || 'minimal-dark').trim().toLowerCase();
-      const previewTemplate = customHtmlOverride || THEMES[previewThemeName] || THEMES['minimal-dark'];
+      const statusCustomHtml = resolveStatusEnvVar(env, 'CUSTOM_HTML', simulatedStatusCode);
+      const statusThemeOverride = resolveStatusEnvVar(env, 'THEME', simulatedStatusCode);
+
+      let previewThemeName;
+      if (requestedTheme && THEMES[requestedTheme]) {
+        previewThemeName = requestedTheme;
+      } else if (statusThemeOverride && THEMES[statusThemeOverride.trim().toLowerCase()]) {
+        previewThemeName = statusThemeOverride.trim().toLowerCase();
+      } else {
+        previewThemeName = (env.THEME || 'minimal-dark').trim().toLowerCase();
+      }
+
+      const previewTemplate = statusCustomHtml || env.CUSTOM_HTML || THEMES[previewThemeName] || THEMES['minimal-dark'];
 
       const retryAfter = env.RETRY_AFTER || '120';
       const siteName = env.SITE_NAME || 'My Service';
@@ -128,7 +143,7 @@ export default {
         HEADING: escapeHtml(heading),
         MESSAGE: escapeHtml(message),
         ACCENT_COLOR: accentColor,
-        STATUS_CODE: '530',
+        STATUS_CODE: String(simulatedStatusCode),
         RETRY_AFTER: escapeHtml(retryAfter),
         STATUS_BUTTON: statusButtonHtml,
         AUTO_REFRESH_SECONDS: autoRefresh

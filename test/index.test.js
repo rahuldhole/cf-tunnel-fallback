@@ -132,6 +132,25 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.strictEqual(resDiagram.status, 200);
     const textDiagram = await resDiagram.text();
     assert.match(textDiagram, /Cloudflare/);
+
+    // Testing ?preview_error=<status> to simulate specific error codes and trigger per-status overrides
+    const reqPreviewErr502 = new Request('https://example.com/?preview_error=502');
+    const resPreviewErr502 = await worker.fetch(reqPreviewErr502, {
+      THEME: 'minimal-dark',
+      THEME_502: 'terminal'
+    });
+    assert.strictEqual(resPreviewErr502.status, 200);
+    assert.strictEqual(resPreviewErr502.headers.get('X-Tunnel-Fallback'), 'preview');
+    const textPreview502 = await resPreviewErr502.text();
+    assert.match(textPreview502, /DIAGNOSTIC TERMINAL/);
+    assert.match(textPreview502, /502/);
+
+    // Combined ?preview=minimal-dark&preview_error=504
+    const reqCombined = new Request('https://example.com/?preview=minimal-dark&preview_error=504');
+    const resCombined = await worker.fetch(reqCombined, {});
+    assert.strictEqual(resCombined.status, 200);
+    const textCombined = await resCombined.text();
+    assert.match(textCombined, /Error 504/);
   });
 
   it('detects API routes by path or Content-Type header and returns JSON', async () => {
