@@ -147,7 +147,13 @@ export default {
     }
 
     const acceptHeader = request.headers.get('Accept') || '';
-    const isJson = acceptHeader.includes('application/json') && !acceptHeader.includes('text/html');
+    const contentTypeHeader = request.headers.get('Content-Type') || '';
+    const isApiRoute = url.pathname.startsWith('/api/') || url.pathname.endsWith('.json');
+    const isJson = (
+      (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html')) ||
+      contentTypeHeader.includes('application/json') ||
+      isApiRoute
+    );
 
     const commonHeaders = {
       'Status': '503',

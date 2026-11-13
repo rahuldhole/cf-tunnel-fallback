@@ -36,6 +36,11 @@ untouched to visitor        custom inline fallback UI
 - **Error 1033 (HTTP 530)**: Origin `cloudflared` tunnel process or host server is completely offline.
 - **HTTP 502 / 504**: The tunnel daemon is online, but your local Docker container, reverse proxy, or backend port is unresponsive or timed out.
 
+### Smart Content Negotiation (HTML vs. JSON API vs. HEAD):
+- **Browsers**: Receive the full interactive HTML theme with live recovery polling.
+- **API Clients (`/api/*`, `Accept: application/json`, or `Content-Type: application/json`)**: Receive a structured JSON response (`{"error": "Service Unavailable", "upstream_status": 530, "retry_after": 120}`) with status `503`. This prevents frontend `JSON.parse` crashes (`Unexpected token '<'`).
+- **Uptime Monitors (`HEAD`)**: Receive a zero-length body with status `503` and diagnostic headers (`X-Tunnel-Fallback: active`), keeping Uptime Kuma, BetterStack, and Pingdom happy.
+
 ### Why visiting the `.workers.dev` URL looks blank / 404:
 When deployed, Cloudflare gives you a default testing URL like `https://cf-tunnel-fallback.<user>.workers.dev`. If you open that URL directly, you will see Cloudflare's generic **404 Page not found**! 
 

@@ -133,3 +133,24 @@ describe('cf-tunnel-fallback worker tests', () => {
     const textDiagram = await resDiagram.text();
     assert.match(textDiagram, /Cloudflare/);
   });
+
+  it('detects API routes by path or Content-Type header and returns JSON', async () => {
+    globalThis.fetch = async () => new Response('Error', { status: 502 });
+
+    // Path check /api/...
+    const reqApiPath = new Request('https://example.com/api/v1/users');
+    const res1 = await worker.fetch(reqApiPath, {});
+    assert.strictEqual(res1.status, 503);
+    assert.strictEqual(res1.headers.get('Content-Type'), 'application/json;charset=UTF-8');
+    const body1 = await res1.json();
+    assert.strictEqual(body1.error, 'Service Unavailable');
+
+    // Content-Type check
+    const reqContentType = new Request('https://example.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const res2 = await worker.fetch(reqContentType, {});
+    assert.strictEqual(res2.status, 503);
+    assert.strictEqual(res2.headers.get('Content-Type'), 'application/json;charset=UTF-8');
+  });
