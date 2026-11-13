@@ -122,6 +122,9 @@ Set the `THEME` environment variable in `wrangler.toml` (or Cloudflare Dashboard
 ```toml
 [vars]
 THEME = "terminal"
+# Or configure per-status overrides (optional):
+# THEME_530 = "status-diagram"  # show diagram when tunnel is offline
+# THEME_502 = "minimal-dark"    # show dark card when local service is down
 ```
 
 ---

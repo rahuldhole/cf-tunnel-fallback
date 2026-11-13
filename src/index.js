@@ -190,7 +190,9 @@ export default {
       });
     }
 
-    const selectedThemeName = (env.THEME || 'minimal-dark').trim().toLowerCase();
+    // Theme Selection: Per-status override (e.g. THEME_530, THEME_502) or global THEME fallback
+    const statusThemeOverride = env[`THEME_${upstreamStatus}`];
+    const selectedThemeName = (statusThemeOverride || env.THEME || 'minimal-dark').trim().toLowerCase();
     const activeTemplate = THEMES[selectedThemeName] || THEMES['minimal-dark'];
 
     const rendered = renderTemplate(activeTemplate, {

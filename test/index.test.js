@@ -154,3 +154,14 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.strictEqual(res2.status, 503);
     assert.strictEqual(res2.headers.get('Content-Type'), 'application/json;charset=UTF-8');
   });
+
+  it('supports per-status code theme overrides (e.g. THEME_530, THEME_502)', async () => {
+    globalThis.fetch = async () => new Response('Error', { status: 530 });
+    const req = new Request('https://example.com/');
+    const res = await worker.fetch(req, {
+      THEME: 'minimal-dark',
+      THEME_530: 'status-diagram'
+    });
+    const text = await res.text();
+    assert.match(text, /Cloudflare/);
+  });
