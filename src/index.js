@@ -44,6 +44,47 @@ export default {
     const bypassToken = (env.BYPASS_TOKEN || '').trim();
     const url = new URL(request.url);
 
+    // 0. Instant Preview Mode: Allows inspecting themes without taking down the tunnel
+    // e.g. ?preview or ?preview=terminal or ?preview=status-diagram
+    if (url.searchParams.has('preview')) {
+      const requestedTheme = url.searchParams.get('preview')?.trim().toLowerCase();
+      const previewThemeName = requestedTheme && THEMES[requestedTheme] ? requestedTheme : (env.THEME || 'minimal-dark').trim().toLowerCase();
+      const previewTemplate = THEMES[previewThemeName] || THEMES['minimal-dark'];
+
+      const retryAfter = env.RETRY_AFTER || '120';
+      const siteName = env.SITE_NAME || 'My Service';
+      const heading = env.HEADING || "We'll be right back";
+      const message = env.MESSAGE || 'Our origin server is currently unreachable or undergoing scheduled maintenance.';
+      const accentColor = sanitizeColor(env.ACCENT_COLOR);
+      const autoRefresh = '0'; // Disable auto-refresh in preview mode
+      const statusUrl = (env.STATUS_PAGE_URL || '').trim();
+
+      let statusButtonHtml = '';
+      if (statusUrl) {
+        statusButtonHtml = '<a href="' + escapeHtml(statusUrl) + '" class="status-btn" target="_blank" rel="noopener noreferrer">Status Page</a>';
+      }
+
+      const rendered = renderTemplate(previewTemplate, {
+        SITE_NAME: escapeHtml(siteName),
+        HEADING: escapeHtml(heading),
+        MESSAGE: escapeHtml(message),
+        ACCENT_COLOR: accentColor,
+        STATUS_CODE: '530',
+        RETRY_AFTER: escapeHtml(retryAfter),
+        STATUS_BUTTON: statusButtonHtml,
+        AUTO_REFRESH_SECONDS: autoRefresh
+      });
+
+      return new Response(rendered, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html;charset=UTF-8',
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+          'X-Tunnel-Fallback': 'preview'
+        }
+      });
+    }
+
     let isBypass = false;
     if (bypassToken) {
       const headerToken = request.headers.get('X-Bypass-Token');

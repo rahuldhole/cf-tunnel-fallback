@@ -112,3 +112,24 @@ describe('cf-tunnel-fallback worker tests', () => {
     const textDiagram = await resDiagram.text();
     assert.match(textDiagram, /Cloudflare/);
   });
+
+  it('renders preview mode with ?preview or ?preview=<theme>', async () => {
+    const reqDefault = new Request('https://example.com/?preview');
+    const resDefault = await worker.fetch(reqDefault, { SITE_NAME: 'Preview Site' });
+    assert.strictEqual(resDefault.status, 200);
+    assert.strictEqual(resDefault.headers.get('X-Tunnel-Fallback'), 'preview');
+    const textDefault = await resDefault.text();
+    assert.match(textDefault, /Preview Site/);
+
+    const reqTerminal = new Request('https://example.com/?preview=terminal');
+    const resTerminal = await worker.fetch(reqTerminal, {});
+    assert.strictEqual(resTerminal.status, 200);
+    const textTerminal = await resTerminal.text();
+    assert.match(textTerminal, /DIAGNOSTIC TERMINAL/);
+
+    const reqDiagram = new Request('https://example.com/?preview=status-diagram');
+    const resDiagram = await worker.fetch(reqDiagram, {});
+    assert.strictEqual(resDiagram.status, 200);
+    const textDiagram = await resDiagram.text();
+    assert.match(textDiagram, /Cloudflare/);
+  });

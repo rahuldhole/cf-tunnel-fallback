@@ -121,33 +121,18 @@ THEME = "terminal"
 
 ---
 
-## Quota Optimization Tip
+## Instant Preview Mode
 
-To prevent consuming your free daily Worker quota (100,000 requests/day) on static assets, add bypass routes in the Cloudflare dashboard:
-1. Navigate to your zone -> **Workers Routes**.
-2. Add routes such as `app.yourdomain.com/assets/*` or `app.yourdomain.com/*.js` with Worker set to **None**.
+You can preview the fallback screen at any time on your live domain or `.workers.dev` URL without taking down your server or tunnel:
 
----
+- **Preview current active theme**:
+  `https://yourdomain.com/?preview`
+- **Preview a specific theme**:
+  - `https://yourdomain.com/?preview=minimal-dark`
+  - `https://yourdomain.com/?preview=terminal`
+  - `https://yourdomain.com/?preview=status-diagram`
 
-## Testing & Verification
-
-Simulate upstream errors or test content negotiation:
-
-- **HTML response check:**
-  ```bash
-  curl -i -H "Accept: text/html" https://yourdomain.com
-  ```
-- **API / JSON response check:**
-  ```bash
-  curl -i -H "Accept: application/json" https://yourdomain.com
-  ```
-- **Bypass token verification:**
-  ```bash
-  curl -i -H "X-Bypass-Token: your_secret_token" https://yourdomain.com
-  ```
-
-npx wrangler deploy
-```
+*(In preview mode, client-side auto-reload is paused and returns HTTP 200 with `X-Tunnel-Fallback: preview`).*
 
 ---
 
@@ -174,4 +159,8 @@ Simulate upstream errors or test content negotiation:
 - **Bypass token verification:**
   ```bash
   curl -i -H "X-Bypass-Token: your_secret_token" https://yourdomain.com
+  ```
+- **Preview mode test:**
+  ```bash
+  curl -i https://yourdomain.com/?preview
   ```
