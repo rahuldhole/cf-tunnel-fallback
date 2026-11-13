@@ -151,6 +151,29 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.strictEqual(resCombined.status, 200);
     const textCombined = await resCombined.text();
     assert.match(textCombined, /Error 504/);
+
+    // Preview mode with JSON API requests
+    const reqJsonPreview = new Request('https://example.com/api/test?preview_error=502', {
+      headers: { 'Accept': 'application/json' }
+    });
+    const resJsonPreview = await worker.fetch(reqJsonPreview, {});
+    assert.strictEqual(resJsonPreview.status, 200);
+    assert.strictEqual(resJsonPreview.headers.get('Content-Type'), 'application/json;charset=UTF-8');
+    assert.strictEqual(resJsonPreview.headers.get('X-Tunnel-Fallback'), 'preview');
+    const jsonData = await resJsonPreview.json();
+    assert.strictEqual(jsonData.error, 'Service Unavailable');
+    assert.strictEqual(jsonData.upstream_status, 502);
+    assert.strictEqual(jsonData.retry_after, 120);
+
+    // Preview mode with HEAD request
+    const reqHeadPreview = new Request('https://example.com/?preview=terminal', {
+      method: 'HEAD'
+    });
+    const resHeadPreview = await worker.fetch(reqHeadPreview, {});
+    assert.strictEqual(resHeadPreview.status, 200);
+    assert.strictEqual(resHeadPreview.headers.get('X-Tunnel-Fallback'), 'preview');
+    const headBody = await resHeadPreview.text();
+    assert.strictEqual(headBody, '');
   });
 
   it('detects API routes by path or Content-Type header and returns JSON', async () => {

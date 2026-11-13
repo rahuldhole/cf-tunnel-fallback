@@ -110,6 +110,57 @@ export default {
         ? parseInt(previewErrorParam, 10)
         : 530;
 
+      const retryAfter = env.RETRY_AFTER || '120';
+      const siteName = env.SITE_NAME || 'My Service';
+      const heading = env.HEADING || "We'll be right back";
+      const message = env.MESSAGE || 'Our origin server is currently unreachable or undergoing scheduled maintenance.';
+      const accentColor = sanitizeColor(env.ACCENT_COLOR);
+      const autoRefresh = '0'; // Disable auto-refresh in preview mode
+      const statusUrl = sanitizeUrl(env.STATUS_PAGE_URL);
+
+      const acceptHeader = request.headers.get('Accept') || '';
+      const contentTypeHeader = request.headers.get('Content-Type') || '';
+      const isApiRoute = url.pathname.startsWith('/api/') || url.pathname.endsWith('.json');
+      const isJson = (
+        (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html')) ||
+        contentTypeHeader.includes('application/json') ||
+        isApiRoute
+      );
+
+      const previewHeaders = {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+        'X-Tunnel-Fallback': 'preview',
+        'Retry-After': retryAfter
+      };
+
+      if (request.method === 'HEAD') {
+        const contentType = isJson ? 'application/json;charset=UTF-8' : 'text/html;charset=UTF-8';
+        return new Response(null, {
+          status: 200,
+          headers: {
+            ...previewHeaders,
+            'Content-Type': contentType
+          }
+        });
+      }
+
+      if (isJson) {
+        const jsonBody = JSON.stringify({
+          error: 'Service Unavailable',
+          message: message,
+          upstream_status: simulatedStatusCode,
+          retry_after: parseInt(retryAfter, 10) || 120
+        });
+        return new Response(jsonBody, {
+          status: 200,
+          headers: {
+            ...previewHeaders,
+            'Content-Type': 'application/json;charset=UTF-8'
+          }
+        });
+      }
+
       const requestedTheme = url.searchParams.get('preview')?.trim().toLowerCase();
       const statusCustomHtml = resolveStatusEnvVar(env, 'CUSTOM_HTML', simulatedStatusCode);
       const statusThemeOverride = resolveStatusEnvVar(env, 'THEME', simulatedStatusCode);
@@ -124,14 +175,6 @@ export default {
       }
 
       const previewTemplate = statusCustomHtml || env.CUSTOM_HTML || THEMES[previewThemeName] || THEMES['minimal-dark'];
-
-      const retryAfter = env.RETRY_AFTER || '120';
-      const siteName = env.SITE_NAME || 'My Service';
-      const heading = env.HEADING || "We'll be right back";
-      const message = env.MESSAGE || 'Our origin server is currently unreachable or undergoing scheduled maintenance.';
-      const accentColor = sanitizeColor(env.ACCENT_COLOR);
-      const autoRefresh = '0'; // Disable auto-refresh in preview mode
-      const statusUrl = sanitizeUrl(env.STATUS_PAGE_URL);
 
       let statusButtonHtml = '';
       if (statusUrl) {
@@ -152,10 +195,8 @@ export default {
       return new Response(rendered, {
         status: 200,
         headers: {
-          'Content-Type': 'text/html;charset=UTF-8',
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'X-Robots-Tag': 'noindex, nofollow, noarchive',
-          'X-Tunnel-Fallback': 'preview'
+          ...previewHeaders,
+          'Content-Type': 'text/html;charset=UTF-8'
         }
       });
     }

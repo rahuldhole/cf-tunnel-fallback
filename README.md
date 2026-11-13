@@ -175,6 +175,10 @@ You can preview the fallback screen at any time on your live domain or `.workers
   - `https://yourdomain.com/?preview=minimal-dark`
   - `https://yourdomain.com/?preview=terminal`
   - `https://yourdomain.com/?preview=status-diagram`
+- **Preview API / JSON response**:
+  `curl -i -H "Accept: application/json" "https://yourdomain.com/?preview_error=502"`
+  or directly via API paths:
+  `curl -i "https://yourdomain.com/api/v1/health?preview_error=503"`
 - **Combine theme & error code**:
   `https://yourdomain.com/?preview=terminal&preview_error=504`
 
