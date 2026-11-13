@@ -145,6 +145,22 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.match(textPreview502, /DIAGNOSTIC TERMINAL/);
     assert.match(textPreview502, /502/);
 
+    // Testing variations: ?preview-error, ?previewError, and ?preview&error=
+    for (const testUrl of [
+      'https://example.com/?preview-error=502',
+      'https://example.com/?previewError=502',
+      'https://example.com/?preview&error=502'
+    ]) {
+      const resVar = await worker.fetch(new Request(testUrl), {
+        THEME: 'minimal-dark',
+        THEME_502: 'terminal'
+      });
+      assert.strictEqual(resVar.status, 200);
+      const textVar = await resVar.text();
+      assert.match(textVar, /DIAGNOSTIC TERMINAL/);
+      assert.match(textVar, /502/);
+    }
+
     // Combined ?preview=minimal-dark&preview_error=504
     const reqCombined = new Request('https://example.com/?preview=minimal-dark&preview_error=504');
     const resCombined = await worker.fetch(reqCombined, {});

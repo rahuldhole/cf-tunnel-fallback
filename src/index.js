@@ -103,9 +103,15 @@ export default {
     const url = new URL(request.url);
 
     // 0. Instant Preview Mode: Allows inspecting themes without taking down the tunnel
-    // e.g. ?preview or ?preview=terminal or ?preview_error=502 or ?preview=terminal&preview_error=504
-    if (url.searchParams.has('preview') || url.searchParams.has('preview_error')) {
-      const previewErrorParam = url.searchParams.get('preview_error');
+    // Supports: ?preview, ?preview_error=502, ?preview-error=502, ?previewError=502, or ?preview=terminal&error=502
+    const hasPreview = url.searchParams.has('preview');
+    const previewErrorParam =
+      url.searchParams.get('preview_error') ||
+      url.searchParams.get('preview-error') ||
+      url.searchParams.get('previewError') ||
+      (hasPreview ? url.searchParams.get('error') : null);
+
+    if (hasPreview || previewErrorParam !== null) {
       const simulatedStatusCode = previewErrorParam && !isNaN(parseInt(previewErrorParam, 10))
         ? parseInt(previewErrorParam, 10)
         : 530;
