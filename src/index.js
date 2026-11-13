@@ -1,14 +1,4 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-let defaultHtml = '';
-try {
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  defaultHtml = fs.readFileSync(path.join(__dirname, 'fallback.html'), 'utf-8');
-} catch (e) {
-  defaultHtml = '<html><body><h1>{{HEADING}}</h1><p>{{MESSAGE}}</p></body></html>';
-}
+import defaultHtml from './fallback.html';
 
 
 function escapeHtml(str) {

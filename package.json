@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node --test"
+    "test": "node --no-warnings --loader=./test/loader.js --test"
   },
   "devDependencies": {
-    "wrangler": "^3.114.17"
+    "wrangler": "^3.91.0"
   }
 }
