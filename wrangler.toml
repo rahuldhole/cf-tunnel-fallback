@@ -9,7 +9,7 @@ globs = ["**/*.html"]
 fallthrough = true
 
 [vars]
-THEME = "minimal-dark" # "minimal-dark", "terminal", or "status-diagram"
+THEME = "status-diagram" # "minimal-dark", "terminal", or "status-diagram"
 SITE_NAME = "My Service"
 HEADING = "We'll be right back"
 MESSAGE = "Our origin server is currently unreachable or undergoing scheduled maintenance."
