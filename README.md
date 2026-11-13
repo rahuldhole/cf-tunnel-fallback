@@ -59,6 +59,7 @@ Variables can be defined in `wrangler.toml` under `[vars]` or in the Cloudflare 
 
 | Variable | Default Value | Description |
 | :--- | :--- | :--- |
+| `THEME` | `"minimal-dark"` | Active theme: `"minimal-dark"`, `"terminal"`, or `"status-diagram"`. |
 | `SITE_NAME` | `"My Service"` | Brand or application name displayed in the header. |
 | `HEADING` | `"We'll be right back"` | Primary title shown on the fallback page. |
 | `MESSAGE` | `"Our origin server is currently unreachable..."` | Description explaining the temporary outage. |
@@ -73,15 +74,16 @@ Variables can be defined in `wrangler.toml` under `[vars]` or in the Cloudflare 
 
 ## Switching Built-in Themes
 
-Three self-contained themes are included in the `themes/` directory:
-- `minimal-dark.html` (Default): Sleek zinc/slate dark UI with pulsing status indicator.
-- `terminal.html`: Hacker / homelab diagnostic screen mimicking an SSH/CLI probe.
-- `status-diagram.html`: 3-node visual architecture diagram (`Browser` → `Cloudflare Edge` → `Origin Host`).
+You can switch themes directly without editing files or redeploying code.
 
-To change the active theme, replace `src/fallback.html` with your chosen theme file:
-```bash
-cp themes/terminal.html src/fallback.html
-npx wrangler deploy
+Set the `THEME` environment variable in `wrangler.toml` (or Cloudflare Dashboard -> **Worker Settings -> Variables**):
+- `minimal-dark` (Default): Sleek zinc/slate dark UI with pulsing status indicator.
+- `terminal`: Diagnostic screen mimicking an SSH/CLI probe.
+- `status-diagram`: 3-node visual architecture diagram (`Browser` → `Cloudflare Edge` → `Origin Host`).
+
+```toml
+[vars]
+THEME = "terminal"
 ```
 
 ---

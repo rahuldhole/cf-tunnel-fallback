@@ -1,5 +1,12 @@
-import defaultHtml from './fallback.html';
+import minimalDarkHtml from '../themes/minimal-dark.html';
+import terminalHtml from '../themes/terminal.html';
+import statusDiagramHtml from '../themes/status-diagram.html';
 
+const THEMES = {
+  'minimal-dark': minimalDarkHtml,
+  'terminal': terminalHtml,
+  'status-diagram': statusDiagramHtml,
+};
 
 function escapeHtml(str) {
   if (typeof str !== 'string') return '';
@@ -122,7 +129,10 @@ export default {
       });
     }
 
-    const rendered = renderTemplate(defaultHtml, {
+    const selectedThemeName = (env.THEME || 'minimal-dark').trim().toLowerCase();
+    const activeTemplate = THEMES[selectedThemeName] || THEMES['minimal-dark'];
+
+    const rendered = renderTemplate(activeTemplate, {
       SITE_NAME: escapeHtml(siteName),
       HEADING: escapeHtml(heading),
       MESSAGE: escapeHtml(message),

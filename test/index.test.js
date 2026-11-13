@@ -98,3 +98,17 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.match(html, /Fish &amp; Chips &lt; &quot;fun&quot;/);
   });
 });
+
+  it('selects theme based on THEME env var', async () => {
+    globalThis.fetch = async () => new Response('Error', { status: 530 });
+
+    const reqTerminal = new Request('https://example.com/');
+    const resTerminal = await worker.fetch(reqTerminal, { THEME: 'terminal' });
+    const textTerminal = await resTerminal.text();
+    assert.match(textTerminal, /DIAGNOSTIC TERMINAL/);
+
+    const reqDiagram = new Request('https://example.com/');
+    const resDiagram = await worker.fetch(reqDiagram, { THEME: 'status-diagram' });
+    const textDiagram = await resDiagram.text();
+    assert.match(textDiagram, /Cloudflare/);
+  });
