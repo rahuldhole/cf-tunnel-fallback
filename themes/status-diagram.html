@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{SITE_NAME}} - Connection Status</title>
+  <style>
+    :root {
+      --accent: {{ACCENT_COLOR}};
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-width: 600px;
+      width: 100%;
+      padding: 2.5rem 2rem;
+      text-align: center;
+    }
+    .diagram {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin: 2rem 0;
+    }
+    .node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90px;
+    }
+    .node-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+    .node-ok .node-icon { background: rgba(34, 197, 94, 0.15); border: 2px solid var(--green); }
+    .node-err .node-icon { background: rgba(239, 68, 68, 0.15); border: 2px solid var(--red); }
+    .node-title { font-size: 0.8rem; font-weight: 600; color: #fff; }
+    .node-status { font-size: 0.7rem; margin-top: 0.2rem; }
+    .node-ok .node-status { color: var(--green); }
+    .node-err .node-status { color: var(--red); }
+    .conn {
+      flex: 1;
+      height: 2px;
+      max-width: 60px;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .conn-ok { background: var(--green); }
+    .conn-fail { background: var(--red); stroke-dasharray: 4; }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    p { color: var(--muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; }
+    .status-btn {
+      display: inline-block;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+    .status-btn:hover { background: rgba(255, 255, 255, 0.2); }
+    .countdown { font-size: 0.8rem; color: var(--muted); margin-top: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>{{HEADING}}</h1>
+    <p>{{MESSAGE}}</p>
+
+    <div class="diagram">
+      <div class="node node-ok">
+        <div class="node-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="node-title">Browser</div>
+        <div class="node-status">Working</div>
+      </div>
+      <div class="conn conn-ok"></div>
+      <div class="node node-ok">
+        <div class="node-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        </div>
+        <div class="node-title">Cloudflare</div>
+        <div class="node-status">Working</div>
+      </div>
+      <div class="conn conn-fail"></div>
+      <div class="node node-err">
+        <div class="node-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+        </div>
+        <div class="node-title">Host</div>
+        <div class="node-status">Error {{STATUS_CODE}}</div>
+      </div>
+    </div>
+
+    {{STATUS_BUTTON}}
+    <div id="countdown" class="countdown"></div>
+  </div>
+  <script>
+    (function() {
+      const interval = parseInt("{{AUTO_REFRESH_SECONDS}}", 10) || 0;
+      if (interval <= 0) return;
+      let left = interval;
+      const el = document.getElementById('countdown');
+      function update() {
+        if (el) el.textContent = 'Auto-reconnecting in ' + left + 's...';
+        if (left <= 0) {
+          left = interval;
+          fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+            .then(res => {
+              if (res.status !== 503 || res.headers.get('X-Tunnel-Fallback') !== 'active') {
+                window.location.reload();
+              }
+            })
+            .catch(() => {});
+        } else {
+          left--;
+        }
+      }
+      update();
+      setInterval(update, 1000);
+    })();
+  </script>
+</body>
+</html>

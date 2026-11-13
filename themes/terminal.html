@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{SITE_NAME}} - System Diagnostic</title>
+  <style>
+    :root {
+      --accent: {{ACCENT_COLOR}};
+      --bg: #0c0d10;
+      --text: #38bdf8;
+      --error: #ef4444;
+      --ok: #22c55e;
+      --dim: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      padding: 2rem;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .term {
+      width: 100%;
+      max-width: 620px;
+      background: #000;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .bar {
+      background: #1e293b;
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      color: var(--dim);
+    }
+    .content {
+      padding: 1.5rem;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+    .line { margin-bottom: 0.5rem; }
+    .status-ok { color: var(--ok); }
+    .status-err { color: var(--error); }
+    .prompt { color: var(--dim); }
+    .status-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.35rem 0.75rem;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.8rem;
+      border-radius: 4px;
+    }
+    .status-btn:hover { background: var(--accent); color: #000; }
+  </style>
+</head>
+<body>
+  <div class="term">
+    <div class="bar">{{SITE_NAME}} // DIAGNOSTIC TERMINAL</div>
+    <div class="content">
+      <div class="line"><span class="prompt">$ </span>probe-upstream --host origin</div>
+      <div class="line">[CF_EDGE] .............. <span class="status-ok">OK (200)</span></div>
+      <div class="line">[TUNNEL] ............... <span class="status-err">DISCONNECTED ({{STATUS_CODE}})</span></div>
+      <div class="line">[NOTICE] ............... {{MESSAGE}}</div>
+      <div class="line" style="margin-top: 1rem;"><span class="prompt">$ </span>{{HEADING}}</div>
+      <div class="line"><span id="countdown" style="color: var(--dim);"></span></div>
+      {{STATUS_BUTTON}}
+    </div>
+  </div>
+  <script>
+    (function() {
+      const interval = parseInt("{{AUTO_REFRESH_SECONDS}}", 10) || 0;
+      if (interval <= 0) return;
+      let left = interval;
+      const el = document.getElementById('countdown');
+      function update() {
+        if (el) el.textContent = '>> Retrying link in ' + left + 's...';
+        if (left <= 0) {
+          left = interval;
+          fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+            .then(res => {
+              if (res.status !== 503 || res.headers.get('X-Tunnel-Fallback') !== 'active') {
+                window.location.reload();
+              }
+            })
+            .catch(() => {});
+        } else {
+          left--;
+        }
+      }
+      update();
+      setInterval(update, 1000);
+    })();
+  </script>
+</body>
+</html>
