@@ -9,7 +9,7 @@ globs = ["**/*.html"]
 fallthrough = true
 
 [vars]
-THEME = "status-diagram" # "minimal-dark", "terminal", or "status-diagram"
+THEME = "status-diagram" # Built-in options: "minimal-dark", "terminal", "status-diagram", or "default"
 SITE_NAME = "My Service"
 HEADING = "We'll be right back"
 MESSAGE = "Our origin server is currently unreachable or undergoing scheduled maintenance."
@@ -19,3 +19,15 @@ INTERCEPT_STATUSES = "502,504,530"
 STATUS_PAGE_URL = ""
 BYPASS_TOKEN = ""
 AUTO_REFRESH_SECONDS = "15"
+
+# --- Optional Per-Status Code Theme Overrides ---
+# Map specific error codes to distinct themes:
+# THEME_530 = "status-diagram"   # When cloudflared tunnel is disconnected (Error 1033)
+# THEME_502 = "terminal"         # When upstream container/service is down
+# THEME_504 = "minimal-dark"     # When gateway times out
+# THEME_503 = "my-custom-theme"  # Any custom theme added to themes/ (e.g. themes/my-custom-theme.html)
+
+# --- Optional Custom Raw HTML Injections ---
+# Inject custom raw HTML directly via variables (takes priority over named themes):
+# CUSTOM_HTML = "<html><body><h1>Maintenance Underway</h1><p>{{MESSAGE}}</p></body></html>"
+# CUSTOM_HTML_530 = "<html><body><h1>Cloudflared Tunnel Disconnected</h1></body></html>"

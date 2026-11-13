@@ -122,10 +122,40 @@ Set the `THEME` environment variable in `wrangler.toml` (or Cloudflare Dashboard
 ```toml
 [vars]
 THEME = "terminal"
-# Or configure per-status overrides (optional):
-# THEME_530 = "status-diagram"  # show diagram when tunnel is offline
-# THEME_502 = "minimal-dark"    # show dark card when local service is down
+
+# Option A: Map built-in or custom themes to specific error codes:
+# THEME_530 = "status-diagram"   # show diagram when tunnel is offline (1033)
+# THEME_502 = "terminal"         # show CLI diagnostic when container is down
+# THEME_504 = "minimal-dark"     # show dark card on gateway timeouts
+# THEME_503 = "my-custom-theme"  # use custom theme from themes/my-custom-theme.html
+
+# Option B: Inject custom raw HTML directly via variables (zero code changes):
+# CUSTOM_HTML = "<html><body><h1>Maintenance</h1></body></html>"
+# CUSTOM_HTML_530 = "<html><body><h1>Cloudflared Disconnected</h1></body></html>"
 ```
+
+### Adding Custom Theme Files (`.html`)
+To add a completely custom HTML theme file:
+
+1. **Option A: Replace default `src/fallback.html`**
+   - Simply edit or overwrite `src/fallback.html` with your custom markup.
+   - It is always available as `THEME = "default"` (or `"fallback"`).
+
+2. **Option B: Add a new theme to `themes/` & register in `src/index.js`**
+   - Create `themes/my-custom-theme.html`.
+   - In `src/index.js`, add the single import:
+     ```javascript
+     import myThemeHtml from '../themes/my-custom-theme.html';
+
+     const THEMES = {
+       'my-theme': myThemeHtml,
+       // ... existing themes
+     };
+     ```
+   - Now you can use it anywhere via `THEME = "my-theme"` or for specific error codes like `THEME_530 = "my-theme"`!
+
+3. **Option C: Zero-Code Custom Raw HTML via Environment Variables**
+   - For quick deploys without touching JavaScript, you can inject raw HTML via `CUSTOM_HTML` or `CUSTOM_HTML_530`.
 
 ---
 

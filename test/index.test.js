@@ -155,13 +155,75 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.strictEqual(res2.headers.get('Content-Type'), 'application/json;charset=UTF-8');
   });
 
-  it('supports per-status code theme overrides (e.g. THEME_530, THEME_502)', async () => {
+  it('supports per-status code theme overrides (e.g. THEME_530, THEME_502, THEME_504)', async () => {
+    // 1. Check 530 overriding to status-diagram
     globalThis.fetch = async () => new Response('Error', { status: 530 });
-    const req = new Request('https://example.com/');
-    const res = await worker.fetch(req, {
+    const req1 = new Request('https://example.com/');
+    const res1 = await worker.fetch(req1, {
       THEME: 'minimal-dark',
       THEME_530: 'status-diagram'
     });
+    const text1 = await res1.text();
+    assert.match(text1, /Cloudflare/);
+
+    // 2. Check 502 overriding to terminal
+    globalThis.fetch = async () => new Response('Error', { status: 502 });
+    const req2 = new Request('https://example.com/');
+    const res2 = await worker.fetch(req2, {
+      THEME: 'minimal-dark',
+      THEME_502: 'terminal'
+    });
+    const text2 = await res2.text();
+    assert.match(text2, /DIAGNOSTIC TERMINAL/);
+
+    // 3. Check 504 overriding to default/fallback theme
+    globalThis.fetch = async () => new Response('Error', { status: 504 });
+    const req3 = new Request('https://example.com/');
+    const res3 = await worker.fetch(req3, {
+      THEME: 'terminal',
+      THEME_504: 'default'
+    });
+    const text3 = await res3.text();
+    assert.doesNotMatch(text3, /DIAGNOSTIC TERMINAL/);
+    assert.match(text3, /Error 504/);
+  });
+
+  it('allows injecting custom raw HTML via CUSTOM_HTML and CUSTOM_HTML_<status>', async () => {
+    globalThis.fetch = async () => new Response('Error', { status: 502 });
+
+    // Global custom HTML
+    const req1 = new Request('https://example.com/');
+    const res1 = await worker.fetch(req1, {
+      CUSTOM_HTML: '<div id="custom-global">Custom Outage {{STATUS_CODE}}</div>'
+    });
+    const text1 = await res1.text();
+    assert.match(text1, /<div id="custom-global">Custom Outage 502<\/div>/);
+
+    // Per-status custom HTML override
+    globalThis.fetch = async () => new Response('Error', { status: 530 });
+    const req2 = new Request('https://example.com/');
+    const res2 = await worker.fetch(req2, {
+      CUSTOM_HTML: '<div>Global</div>',
+      CUSTOM_HTML_530: '<div id="custom-530">Custom Tunnel Crash!</div>'
+    });
+    const text2 = await res2.text();
+    assert.match(text2, /<div id="custom-530">Custom Tunnel Crash!<\/div>/);
+  });
+
+  it('renders custom theme files added to themes/ (e.g. themes/custom-sample.html)', async () => {
+    globalThis.fetch = async () => new Response('Error', { status: 504 });
+
+    const req = new Request('https://example.com/');
+    const res = await worker.fetch(req, {
+      THEME: 'minimal-dark',
+      THEME_504: 'custom-sample',
+      HEADING: 'Custom Outage Heading',
+      MESSAGE: 'Custom message in custom theme'
+    });
+    assert.strictEqual(res.status, 503);
     const text = await res.text();
-    assert.match(text, /Cloudflare/);
+    assert.match(text, /id="custom-theme-test"/);
+    assert.match(text, /Custom Outage Heading/);
+    assert.match(text, /Custom message in custom theme/);
+    assert.match(text, /Status: 504/);
   });

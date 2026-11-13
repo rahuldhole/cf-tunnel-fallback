@@ -1,11 +1,16 @@
+import defaultHtml from './fallback.html';
 import minimalDarkHtml from '../themes/minimal-dark.html';
 import terminalHtml from '../themes/terminal.html';
 import statusDiagramHtml from '../themes/status-diagram.html';
+import customSampleHtml from '../themes/custom-sample.html';
 
 const THEMES = {
+  'default': defaultHtml,
+  'fallback': defaultHtml,
   'minimal-dark': minimalDarkHtml,
   'terminal': terminalHtml,
   'status-diagram': statusDiagramHtml,
+  'custom-sample': customSampleHtml,
 };
 
 function escapeHtml(str) {
@@ -60,8 +65,9 @@ export default {
     // e.g. ?preview or ?preview=terminal or ?preview=status-diagram
     if (url.searchParams.has('preview')) {
       const requestedTheme = url.searchParams.get('preview')?.trim().toLowerCase();
+      const customHtmlOverride = env.CUSTOM_HTML || env[`CUSTOM_HTML_${requestedTheme}`];
       const previewThemeName = requestedTheme && THEMES[requestedTheme] ? requestedTheme : (env.THEME || 'minimal-dark').trim().toLowerCase();
-      const previewTemplate = THEMES[previewThemeName] || THEMES['minimal-dark'];
+      const previewTemplate = customHtmlOverride || THEMES[previewThemeName] || THEMES['minimal-dark'];
 
       const retryAfter = env.RETRY_AFTER || '120';
       const siteName = env.SITE_NAME || 'My Service';
@@ -190,10 +196,16 @@ export default {
       });
     }
 
-    // Theme Selection: Per-status override (e.g. THEME_530, THEME_502) or global THEME fallback
+    // Theme Selection Priority:
+    // 1. Direct custom raw HTML env var per-status: CUSTOM_HTML_530, CUSTOM_HTML_502
+    // 2. Direct global custom raw HTML env var: CUSTOM_HTML
+    // 3. Named theme per-status override: THEME_530, THEME_502 ("terminal", "status-diagram", "minimal-dark")
+    // 4. Global named theme: THEME
+    // 5. Default fallback theme: "minimal-dark"
+    const customStatusHtml = env[`CUSTOM_HTML_${upstreamStatus}`];
     const statusThemeOverride = env[`THEME_${upstreamStatus}`];
     const selectedThemeName = (statusThemeOverride || env.THEME || 'minimal-dark').trim().toLowerCase();
-    const activeTemplate = THEMES[selectedThemeName] || THEMES['minimal-dark'];
+    const activeTemplate = customStatusHtml || env.CUSTOM_HTML || THEMES[selectedThemeName] || THEMES['minimal-dark'];
 
     const rendered = renderTemplate(activeTemplate, {
       SITE_NAME: escapeHtml(siteName),
