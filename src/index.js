@@ -30,6 +30,18 @@ function sanitizeColor(color) {
   return '#f59e0b';
 }
 
+function sanitizeUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return trimmed;
+    }
+  } catch (_) {}
+  return '';
+}
+
 export function renderTemplate(template, data) {
   let html = template;
   for (const [key, val] of Object.entries(data)) {
@@ -57,7 +69,7 @@ export default {
       const message = env.MESSAGE || 'Our origin server is currently unreachable or undergoing scheduled maintenance.';
       const accentColor = sanitizeColor(env.ACCENT_COLOR);
       const autoRefresh = '0'; // Disable auto-refresh in preview mode
-      const statusUrl = (env.STATUS_PAGE_URL || '').trim();
+      const statusUrl = sanitizeUrl(env.STATUS_PAGE_URL);
 
       let statusButtonHtml = '';
       if (statusUrl) {
@@ -127,7 +139,7 @@ export default {
     const message = env.MESSAGE || 'Our origin server is currently unreachable or undergoing scheduled maintenance.';
     const accentColor = sanitizeColor(env.ACCENT_COLOR);
     const autoRefresh = env.AUTO_REFRESH_SECONDS !== undefined ? String(env.AUTO_REFRESH_SECONDS) : '15';
-    const statusUrl = (env.STATUS_PAGE_URL || '').trim();
+    const statusUrl = sanitizeUrl(env.STATUS_PAGE_URL);
 
     let statusButtonHtml = '';
     if (statusUrl) {
