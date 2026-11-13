@@ -102,7 +102,7 @@ Variables can be defined in `wrangler.toml` under `[vars]` or in the Cloudflare 
 | `HEADING` | `"We'll be right back"` | Primary title shown on the fallback page. |
 | `MESSAGE` | `"Our origin server is currently unreachable..."` | Description explaining the temporary outage. |
 | `ACCENT_COLOR` | `"#f59e0b"` | Hex/RGB accent color used for indicators and buttons. |
-| `INTERCEPT_STATUSES` | `"502,504,530"` | Comma-delimited list of upstream HTTP statuses to catch. |
+| `INTERCEPT_STATUSES` | `"502,504,530"` | Comma-delimited list of upstream HTTP statuses to catch. Supports exact codes (`502,504,530`), wildcards (`5xx`, `5*`, `5**`, `4xx`), or error catch-all (`*`). |
 | `RETRY_AFTER` | `"120"` | Seconds sent in the `Retry-After` HTTP header. |
 | `STATUS_PAGE_URL` | `""` | Optional URL to an external status monitor (displays a button if populated). |
 | `BYPASS_TOKEN` | `""` | Secret string allowing owners to bypass fallback via `?bypass=<token>` or `X-Bypass-Token`. |
@@ -123,15 +123,18 @@ Set the `THEME` environment variable in `wrangler.toml` (or Cloudflare Dashboard
 [vars]
 THEME = "terminal"
 
-# Option A: Map built-in or custom themes to specific error codes:
+# Option A: Map built-in or custom themes to specific error codes or wildcards:
 # THEME_530 = "status-diagram"   # show diagram when tunnel is offline (1033)
 # THEME_502 = "terminal"         # show CLI diagnostic when container is down
 # THEME_504 = "minimal-dark"     # show dark card on gateway timeouts
+# THEME_5XX = "terminal"         # wildcard for all 5xx server errors (also 5**, 5*)
+# THEME_4XX = "minimal-dark"     # wildcard for 4xx client errors (if intercepted)
 # THEME_503 = "my-custom-theme"  # use custom theme from themes/my-custom-theme.html
 
 # Option B: Inject custom raw HTML directly via variables (zero code changes):
 # CUSTOM_HTML = "<html><body><h1>Maintenance</h1></body></html>"
 # CUSTOM_HTML_530 = "<html><body><h1>Cloudflared Disconnected</h1></body></html>"
+# CUSTOM_HTML_5XX = "<html><body><h1>Server Error: {{STATUS_CODE}}</h1></body></html>"
 ```
 
 ### Adding Custom Theme Files (`.html`)

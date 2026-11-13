@@ -15,19 +15,22 @@ HEADING = "We'll be right back"
 MESSAGE = "Our origin server is currently unreachable or undergoing scheduled maintenance."
 ACCENT_COLOR = "#f59e0b"
 RETRY_AFTER = "120"
-INTERCEPT_STATUSES = "502,504,530"
+INTERCEPT_STATUSES = "502,504,530" # Supports exact codes ("502,504,530"), wildcards ("5xx", "5**", "5*"), or error catch-all ("*")
 STATUS_PAGE_URL = ""
 BYPASS_TOKEN = ""
 AUTO_REFRESH_SECONDS = "15"
 
 # --- Optional Per-Status Code Theme Overrides ---
-# Map specific error codes to distinct themes:
+# Map specific error codes or wildcard ranges to distinct themes:
 # THEME_530 = "status-diagram"   # When cloudflared tunnel is disconnected (Error 1033)
 # THEME_502 = "terminal"         # When upstream container/service is down
 # THEME_504 = "minimal-dark"     # When gateway times out
+# THEME_5XX = "terminal"         # Wildcard for all 5xx server errors (also supports 5**, 5*)
+# THEME_4XX = "minimal-dark"     # Wildcard for 4xx client errors (if intercepted)
 # THEME_503 = "my-custom-theme"  # Any custom theme added to themes/ (e.g. themes/my-custom-theme.html)
 
 # --- Optional Custom Raw HTML Injections ---
 # Inject custom raw HTML directly via variables (takes priority over named themes):
 # CUSTOM_HTML = "<html><body><h1>Maintenance Underway</h1><p>{{MESSAGE}}</p></body></html>"
 # CUSTOM_HTML_530 = "<html><body><h1>Cloudflared Tunnel Disconnected</h1></body></html>"
+# CUSTOM_HTML_5XX = "<html><body><h1>Server Error</h1><p>Status: {{STATUS_CODE}}</p></body></html>"

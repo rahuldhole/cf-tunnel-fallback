@@ -227,3 +227,66 @@ describe('cf-tunnel-fallback worker tests', () => {
     assert.match(text, /Custom message in custom theme/);
     assert.match(text, /Status: 504/);
   });
+
+  it('supports wildcard error options like 5xx, 5**, 5*, 4xx, and * in INTERCEPT_STATUSES', async () => {
+    // 1. Wildcard 5xx intercepting 500, 502, 599 but not 404
+    const env5xx = { INTERCEPT_STATUSES: '5xx' };
+    for (const code of [500, 502, 599]) {
+      globalThis.fetch = async () => new Response('Error', { status: code });
+      const req = new Request('https://example.com/');
+      const res = await worker.fetch(req, env5xx);
+      assert.strictEqual(res.status, 503);
+      assert.strictEqual(res.headers.get('X-Tunnel-Fallback'), 'active');
+    }
+    globalThis.fetch = async () => new Response('Not Found', { status: 404 });
+    const res404 = await worker.fetch(new Request('https://example.com/'), env5xx);
+    assert.strictEqual(res404.status, 404);
+    assert.strictEqual(res404.headers.get('X-Tunnel-Fallback'), null);
+
+    // 2. Wildcard 4** and 5*
+    const envMultipleWildcards = { INTERCEPT_STATUSES: '4**, 5*' };
+    globalThis.fetch = async () => new Response('Forbidden', { status: 403 });
+    const res403 = await worker.fetch(new Request('https://example.com/'), envMultipleWildcards);
+    assert.strictEqual(res403.status, 503);
+
+    // 3. Catch-all '*' intercepts any error >= 400 but preserves 200
+    const envAll = { INTERCEPT_STATUSES: '*' };
+    globalThis.fetch = async () => new Response('Bad Request', { status: 400 });
+    const res400 = await worker.fetch(new Request('https://example.com/'), envAll);
+    assert.strictEqual(res400.status, 503);
+
+    globalThis.fetch = async () => new Response('OK', { status: 200 });
+    const res200 = await worker.fetch(new Request('https://example.com/'), envAll);
+    assert.strictEqual(res200.status, 200);
+  });
+
+  it('supports wildcard status overrides for themes (e.g. THEME_5XX, THEME_5*, CUSTOM_HTML_5XX)', async () => {
+    // Exact override wins over wildcard
+    globalThis.fetch = async () => new Response('Error', { status: 530 });
+    const resExact = await worker.fetch(new Request('https://example.com/'), {
+      INTERCEPT_STATUSES: '5xx',
+      THEME_5XX: 'minimal-dark',
+      THEME_530: 'status-diagram'
+    });
+    const textExact = await resExact.text();
+    assert.match(textExact, /Cloudflare/);
+
+    // Wildcard THEME_5XX applies to other 5xx errors (e.g. 500)
+    globalThis.fetch = async () => new Response('Error', { status: 500 });
+    const resWildcard = await worker.fetch(new Request('https://example.com/'), {
+      INTERCEPT_STATUSES: '5xx',
+      THEME_5XX: 'terminal',
+      THEME_530: 'status-diagram'
+    });
+    const textWildcard = await resWildcard.text();
+    assert.match(textWildcard, /DIAGNOSTIC TERMINAL/);
+
+    // Wildcard CUSTOM_HTML_5XX
+    globalThis.fetch = async () => new Response('Error', { status: 503 });
+    const resCustomWildcard = await worker.fetch(new Request('https://example.com/'), {
+      INTERCEPT_STATUSES: '5xx',
+      CUSTOM_HTML_5XX: '<div id="wildcard-5xx">5XX Family Caught {{STATUS_CODE}}</div>'
+    });
+    const textCustom = await resCustomWildcard.text();
+    assert.match(textCustom, /<div id="wildcard-5xx">5XX Family Caught 503<\/div>/);
+  });

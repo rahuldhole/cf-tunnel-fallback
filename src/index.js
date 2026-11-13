@@ -56,6 +56,47 @@ export function renderTemplate(template, data) {
   return html;
 }
 
+export function shouldInterceptStatus(interceptConfig, status) {
+  if (!interceptConfig || typeof interceptConfig !== 'string') return false;
+  const rules = interceptConfig.split(',').map(r => r.trim().toLowerCase()).filter(Boolean);
+
+  for (const rule of rules) {
+    if (rule === '*' || rule === 'all') {
+      if (status >= 400) return true;
+    } else if (/^[1-5](xx|\*\*|\*)$/.test(rule)) {
+      const family = parseInt(rule[0], 10);
+      if (Math.floor(status / 100) === family) return true;
+    } else {
+      const code = parseInt(rule, 10);
+      if (!isNaN(code) && code === status) return true;
+    }
+  }
+  return false;
+}
+
+export function resolveStatusEnvVar(env, prefix, status) {
+  if (!status) return undefined;
+  // 1. Exact match e.g. THEME_530 or CUSTOM_HTML_530
+  if (env[`${prefix}_${status}`]) return env[`${prefix}_${status}`];
+
+  // 2. Class match e.g. THEME_5XX, THEME_5**, THEME_5*
+  const family = Math.floor(status / 100);
+  const patterns = [`${prefix}_${family}XX`, `${prefix}_${family}xx`, `${prefix}_${family}**`, `${prefix}_${family}*`];
+  for (const p of patterns) {
+    if (env[p]) return env[p];
+  }
+
+  // 3. Catch-all match e.g. THEME_* or THEME_ALL
+  if (status >= 400) {
+    const catchAlls = [`${prefix}_*`, `${prefix}_ALL`, `${prefix}_all`];
+    for (const ca of catchAlls) {
+      if (env[ca]) return env[ca];
+    }
+  }
+
+  return undefined;
+}
+
 export default {
   async fetch(request, env = {}, ctx) {
     const bypassToken = (env.BYPASS_TOKEN || '').trim();
@@ -130,12 +171,8 @@ export default {
       upstreamStatus = 530;
     }
 
-    const interceptStatuses = (env.INTERCEPT_STATUSES || '502,504,530')
-      .split(',')
-      .map(s => parseInt(s.trim(), 10))
-      .filter(Boolean);
-
-    if (response && !interceptStatuses.includes(upstreamStatus)) {
+    const interceptConfig = env.INTERCEPT_STATUSES !== undefined ? String(env.INTERCEPT_STATUSES) : '502,504,530';
+    if (response && !shouldInterceptStatus(interceptConfig, upstreamStatus)) {
       return response;
     }
 
@@ -197,13 +234,13 @@ export default {
     }
 
     // Theme Selection Priority:
-    // 1. Direct custom raw HTML env var per-status: CUSTOM_HTML_530, CUSTOM_HTML_502
+    // 1. Direct custom raw HTML env var per-status (e.g. CUSTOM_HTML_530, CUSTOM_HTML_5XX, CUSTOM_HTML_*)
     // 2. Direct global custom raw HTML env var: CUSTOM_HTML
-    // 3. Named theme per-status override: THEME_530, THEME_502 ("terminal", "status-diagram", "minimal-dark")
+    // 3. Named theme per-status override (e.g. THEME_530, THEME_5XX, THEME_*)
     // 4. Global named theme: THEME
     // 5. Default fallback theme: "minimal-dark"
-    const customStatusHtml = env[`CUSTOM_HTML_${upstreamStatus}`];
-    const statusThemeOverride = env[`THEME_${upstreamStatus}`];
+    const customStatusHtml = resolveStatusEnvVar(env, 'CUSTOM_HTML', upstreamStatus);
+    const statusThemeOverride = resolveStatusEnvVar(env, 'THEME', upstreamStatus);
     const selectedThemeName = (statusThemeOverride || env.THEME || 'minimal-dark').trim().toLowerCase();
     const activeTemplate = customStatusHtml || env.CUSTOM_HTML || THEMES[selectedThemeName] || THEMES['minimal-dark'];
 
