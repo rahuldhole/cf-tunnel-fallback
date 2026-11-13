@@ -4,52 +4,85 @@ A zero-dependency Cloudflare Worker designed to catch origin errors (such as HTT
 
 ---
 
-## How It Works
+## How It Works (The Core Concept)
 
-When hosting applications via Cloudflare Tunnel, downtime typically surfaces as:
-- **Error 1033 (HTTP 530)**: The origin tunnel (`cloudflared`) process or host machine is completely offline.
-- **HTTP 502 / 504**: The tunnel connector is connected to Cloudflare Edge, but the target local service (Docker container, systemd daemon, local reverse proxy, or port) is unresponsive or timed out.
+> [!IMPORTANT]
+> **This Worker binds to the EXACT SAME domain as your Cloudflare Tunnel.**
+> You do **not** need a separate subdomain or redirect. Both your Tunnel and this Worker share the exact same hostname (e.g. `example.com/*` or `app.example.com/*`).
 
-This Worker routes traffic ahead of or alongside your tunnel route:
-1. It proxies incoming traffic to your upstream route.
-2. If the response status is healthy (2xx, 3xx, or standard 4xx), it returns the response completely untouched.
-3. If the upstream fails or returns an intercepted error (default `502, 504, 530`), it returns an HTTP `503 Service Unavailable` response with an inline fallback UI and `no-store` caching headers.
-4. An inline auto-recovery script periodically checks for recovery via `HEAD` requests and seamlessly reloads the page once your origin service is restored.
+```text
+Visitor hits: https://app.yourdomain.com
+                    │
+                    ▼
+          [ Cloudflare Edge ]
+                    │
+                    ▼
+         [ cf-tunnel-fallback ]  <── Worker assigned to: app.yourdomain.com/*
+                    │
+                    ▼
+          Worker fetches upstream
+                    │
+                    ▼
+       [ Cloudflare Tunnel connector ]
+                    │
+       ┌────────────┴────────────┐
+       ▼                         ▼
+Origin Healthy (200 OK)    Origin Down (530 / 502 / 504)
+Worker passes traffic       Worker intercepts & serves
+untouched to visitor        custom inline fallback UI
+```
+
+### Why downtime happens:
+- **Error 1033 (HTTP 530)**: Origin `cloudflared` tunnel process or host server is completely offline.
+- **HTTP 502 / 504**: The tunnel daemon is online, but your local Docker container, reverse proxy, or backend port is unresponsive or timed out.
+
+### Why visiting the `.workers.dev` URL looks blank / 404:
+When deployed, Cloudflare gives you a default testing URL like `https://cf-tunnel-fallback.<user>.workers.dev`. If you open that URL directly, you will see Cloudflare's generic **404 Page not found**! 
+
+**Why?** Because the Worker is a reverse-proxy that forwards requests upstream: `.workers.dev` has no origin server attached to it, so Cloudflare Edge returns a 404. Since 404 is not an intercepted server crash status, the worker lets it pass through. 
+
+**To activate the fallback page**, simply bind the Worker route to your real domain (instructions below).
 
 ---
 
-## Deployment Options
+## Deployment & Setup
 
 ### Method 1: Fork & Deploy to Cloudflare
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/YOUR_USERNAME/cf-tunnel-fallback)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/rahuldhole/cf-tunnel-fallback)
 
-1. Fork this repository or click the deploy button above.
-2. Once deployed to Cloudflare Workers:
-   - Navigate to **Workers & Pages** -> your worker -> **Settings** -> **Domains & Routes**.
-   - Add a Route targeting your domain (e.g., `app.yourdomain.com/*`).
-   - Ensure the Worker route is active for that hostname.
-3. (Optional) Customize environment variables in **Settings** -> **Variables and Secrets**.
+1. Click the **Deploy to Cloudflare** button above (or fork this repo).
+2. Follow Cloudflare's prompts to authorize and deploy.
+
+### Critical Step: Attach the Worker to Your Tunnel Domain
+Once deployed, you **must** assign the Worker to the same route as your tunnel:
+1. In Cloudflare Dashboard, go to **Workers & Pages** -> **`cf-tunnel-fallback`** -> **Settings** -> **Domains & Routes**.
+2. Under **Routes**, click **Add Route**:
+   - **Route**: `app.yourdomain.com/*` (or `yourdomain.com/*` or wildcard `*.yourdomain.com/*`)
+   - **Zone**: Select your domain zone (`yourdomain.com`)
+3. Click **Save**.
+
+That's it! When your tunnel is live, your app loads normally. When your tunnel or container is down, your branded fallback page renders seamlessly on that exact URL.
 
 ---
 
 ### Method 2: Manual CLI Deployment
 
-1. Clone your repository:
+1. Clone the repository:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/cf-tunnel-fallback.git
+   git clone https://github.com/rahuldhole/cf-tunnel-fallback.git
    cd cf-tunnel-fallback
    npm install
    ```
 
-2. Review or update variables in `wrangler.toml`.
+2. Configure environment variables in `wrangler.toml` under `[vars]`.
 
 3. Deploy:
    ```bash
    npx wrangler deploy
    ```
 
-4. Attach your custom domain or route either via `wrangler.toml` or the Cloudflare dashboard.
+4. Attach your custom domain route in the Cloudflare dashboard as described in the step above.
 
 ---
 
