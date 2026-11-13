@@ -100,19 +100,20 @@
     }
     .theme-picker {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 0.5rem;
     }
     .theme-btn {
       background: #18181b;
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 0.5rem;
-      font-size: 0.75rem;
+      padding: 0.6rem 0.5rem;
+      font-size: 0.8rem;
       border-radius: 6px;
       cursor: pointer;
       text-align: center;
       transition: all 0.15s ease;
+      white-space: nowrap;
     }
     .theme-btn:hover { border-color: var(--muted); }
     .theme-btn.active {
@@ -255,6 +256,7 @@
         <button class="theme-btn active" id="btn-minimal" onclick="setTheme('minimal-dark')">Minimal</button>
         <button class="theme-btn" id="btn-terminal" onclick="setTheme('terminal')">Terminal</button>
         <button class="theme-btn" id="btn-status" onclick="setTheme('status-diagram')">Diagram</button>
+        <a href="https://github.com/rahuldhole/cf-tunnel-fallback#adding-custom-theme-files-html" target="_blank" class="theme-btn" style="text-decoration:none; display:flex; align-items:center; justify-content:center;">Custom ↗</a>
       </div>
     </div>
 
@@ -368,7 +370,7 @@
         .replace(/{{STATUS_CODE}}/g, code)
         .replace(/{{RETRY_AFTER}}/g, '120')
         .replace(/{{STATUS_BUTTON}}/g, '<a href="#" class="status-btn" target="_blank">Status Page</a>')
-        .replace(/{{AUTO_REFRESH_SECONDS}}/g, '15');
+        .replace(/{{AUTO_REFRESH_SECONDS}}/g, '0');
 
       const frame = document.getElementById('previewFrame');
       const doc = frame.contentDocument || frame.contentWindow.document;
